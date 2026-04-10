@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyclus Maaltijd Advisor — Eat for Leadership</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f7f4; color: #1a1a1a; min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f3ef;
+      --text: #1a1a1a;
+      --muted: #6b6b6b;
+      --border: rgba(0,0,0,0.15);
+      --border-mid: rgba(0,0,0,0.25);
+      --border-strong: rgba(0,0,0,0.4);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    .tool-wrap { max-width: 600px; width: 100%; padding: 2rem; background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; color: var(--text); }
+    .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; line-height: 1.5; }
+    .section-label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
+    .phase-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+    .phase-btn { border: 0.5px solid var(--border-mid); border-radius: var(--radius); padding: 10px 6px; text-align: center; cursor: pointer; background: var(--bg); transition: all 0.15s; }
+    .phase-btn:hover { background: var(--bg2); }
+    .phase-btn.active.menstruatie { border: 1.5px solid #D4537E; background: #FBEAF0; }
+    .phase-btn.active.folliculair { border: 1.5px solid #1D9E75; background: #E1F5EE; }
+    .phase-btn.active.ovulatie { border: 1.5px solid #EF9F27; background: #FAEEDA; }
+    .phase-btn.active.luteaal { border: 1.5px solid #7F77DD; background: #EEEDFE; }
+    .phase-icon { font-size: 18px; margin-bottom: 4px; }
+    .phase-name { font-size: 12px; font-weight: 500; color: var(--text); }
+    .phase-day { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .day-input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+    .day-input-row input[type=number] { width: 64px; padding: 6px 10px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); }
+    .day-label { font-size: 14px; color: var(--muted); }
+    .dag-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+    .dag-btn { border: 0.5px solid var(--border-mid); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; background: var(--bg); text-align: left; transition: all 0.15s; }
+    .dag-btn:hover { background: var(--bg2); }
+    .dag-btn.active { border: 1.5px solid #378ADD; background: #E6F1FB; }
+    .dag-btn-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .dag-btn-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .generate-btn { width: 100%; padding: 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; transition: all 0.15s; }
+    .generate-btn:hover:not(:disabled) { background: var(--bg2); }
+    .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .result-wrap { margin-top: 1.5rem; border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: var(--bg); }
+    .result-header { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.04em; }
+    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .tag { font-size: 11px; padding: 3px 9px; border-radius: var(--radius); border: 0.5px solid var(--border-mid); color: var(--muted); background: var(--bg2); }
+    .streamed-text { font-size: 14px; color: var(--text); line-height: 1.75; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+<div class="tool-wrap">
+  <h1>Maaltijdadvies op maat</h1>
+  <p class="subtitle">Afgestemd op je cyclusfase én wat de dag van je vraagt. Kleur op je bord = regulatie in je lichaam.</p>
+
+  <div class="section-label">Cyclusfase</div>
+  <div class="phase-grid">
+    <div class="phase-btn menstruatie" data-phase="menstruatie" onclick="selectPhase(this)">
+      <div class="phase-icon">🌑</div>
+      <div class="phase-name">Menstruatie</div>
+      <div class="phase-day">Dag 1–5</div>
+    </div>
+    <div class="phase-btn folliculair" data-phase="folliculair" onclick="selectPhase(this)">
+      <div class="phase-icon">🌱</div>
+      <div class="phase-name">Folliculair</div>
+      <div class="phase-day">Dag 6–13</div>
+    </div>
+    <div class="phase-btn ovulatie" data-phase="ovulatie" onclick="selectPhase(this)">
+      <div class="phase-icon">🌕</div>
+      <div class="phase-name">Ovulatie</div>
+      <div class="phase-day">Dag 14–16</div>
+    </div>
+    <div class="phase-btn luteaal" data-phase="luteaal" onclick="selectPhase(this)">
+      <div class="phase-icon">🌘</div>
+      <div class="phase-name">Luteaal</div>
+      <div class="phase-day">Dag 17–28</div>
+    </div>
+  </div>
+
+  <div class="section-label">Cyclusdag</div>
+  <div class="day-input-row">
+    <input type="number" id="cyclusdag" min="1" max="35" value="1" oninput="checkReady()" />
+    <span class="day-label">van de cyclus</span>
+  </div>
+
+  <div class="section-label">Wat vraagt deze dag van je?</div>
+  <div class="dag-grid">
+    <div class="dag-btn" data-dag="deep work" onclick="selectDag(this)">
+      <div class="dag-btn-name">Deep work</div>
+      <div class="dag-btn-sub">Focus, schrijven, analyseren</div>
+    </div>
+    <div class="dag-btn" data-dag="veel afspraken" onclick="selectDag(this)">
+      <div class="dag-btn-name">Veel afspraken</div>
+      <div class="dag-btn-sub">Calls, presentaties, netwerken</div>
+    </div>
+    <div class="dag-btn" data-dag="creatief werk" onclick="selectDag(this)">
+      <div class="dag-btn-name">Creatief werk</div>
+      <div class="dag-btn-sub">Ideeën, strategie, content</div>
+    </div>
+    <div class="dag-btn" data-dag="herstel en rust" onclick="selectDag(this)">
+      <div class="dag-btn-name">Herstel en rust</div>
+      <div class="dag-btn-sub">Lichte dag, opladen</div>
+    </div>
+  </div>
+
+  <div class="section-label">Wat eet je niet?</div>
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem;">
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); user-select: none;">
+      <input type="checkbox" id="geen-vis" style="width:14px;height:14px;cursor:pointer;" onchange="updateUitsluitingen()"> Geen vis
+    </label>
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); user-select: none;">
+      <input type="checkbox" id="geen-zeevruchten" style="width:14px;height:14px;cursor:pointer;" onchange="updateUitsluitingen()"> Geen zeevruchten
+    </label>
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); user-select: none;">
+      <input type="checkbox" id="geen-vlees" style="width:14px;height:14px;cursor:pointer;" onchange="updateUitsluitingen()"> Geen vlees
+    </label>
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); user-select: none;">
+      <input type="checkbox" id="geen-orgaanvlees" style="width:14px;height:14px;cursor:pointer;" onchange="updateUitsluitingen()"> Geen orgaanvlees
+    </label>
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); user-select: none;">
+      <input type="checkbox" id="geen-zuivel" style="width:14px;height:14px;cursor:pointer;" onchange="updateUitsluitingen()"> Geen zuivel
+    </label>
+  </div>
+
+  <button class="generate-btn" id="gen-btn" disabled onclick="generateAdvies()">Geef mij mijn maaltijdadvies →</button>
+
+  <div class="result-wrap" id="result" style="display:none;">
+    <div class="result-header" id="result-header"></div>
+    <div class="tag-row" id="tag-row"></div>
+    <div class="streamed-text" id="streamed"></div>
+    <div id="recept-btns" style="display:none; margin-top: 1.25rem; border-top: 0.5px solid var(--border); padding-top: 1rem;">
+      <div style="font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px;">Recept opvragen</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <button class="recept-btn" id="recept-ontbijt" onclick="getRecept('ontbijt')" style="font-size: 13px; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer;">Ontbijt</button>
+        <button class="recept-btn" id="recept-lunch" onclick="getRecept('lunch')" style="font-size: 13px; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer;">Lunch</button>
+        <button class="recept-btn" id="recept-avondeten" onclick="getRecept('avondeten')" style="font-size: 13px; padding: 7px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer;">Avondeten</button>
+      </div>
+    </div>
+    <div id="recept-result" style="display:none; margin-top: 1.25rem; border-top: 0.5px solid var(--border); padding-top: 1rem;">
+      <div style="font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px;" id="recept-header"></div>
+      <div class="streamed-text" id="recept-streamed"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedPhase = null;
+let selectedDag = null;
+
+function selectPhase(el) {
+  document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedPhase = el.dataset.phase;
+  checkReady();
+}
+
+function selectDag(el) {
+  document.querySelectorAll('.dag-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedDag = el.dataset.dag;
+  checkReady();
+}
+
+function updateUitsluitingen() {}
+
+function checkReady() {
+  document.getElementById('gen-btn').disabled = !(selectedPhase && selectedDag);
+}
+
+function getUitsluitingen() {
+  const uit = [];
+  if (document.getElementById('geen-vis').checked) uit.push('geen vis (ansjovis, tonijn, makreel, sardines, haring, wilde vis)');
+  if (document.getElementById('geen-zeevruchten').checked) uit.push('geen zeevruchten (garnalen, mosselen, inktvis e.d.)');
+  if (document.getElementById('geen-vlees').checked) uit.push('geen grasgevoerd vlees of gehakt');
+  if (document.getElementById('geen-orgaanvlees').checked) uit.push('geen orgaanvlees (lever, kippenlevertjes)');
+  if (document.getElementById('geen-zuivel').checked) uit.push('geen kefir of yoghurt van rauwe melk');
+  return uit;
+}
+
+async function generateAdvies() {
+  const dag = document.getElementById('cyclusdag').value;
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = 'Bezig met samenstellen…';
+
+  const resultEl = document.getElementById('result');
+  const headerEl = document.getElementById('result-header');
+  const tagRow = document.getElementById('tag-row');
+  const streamEl = document.getElementById('streamed');
+
+  resultEl.style.display = 'block';
+  streamEl.textContent = '';
+
+  const phaseLabels = {
+    menstruatie: 'Menstruatie',
+    folliculair: 'Folliculaire fase',
+    ovulatie: 'Ovulatie',
+    luteaal: 'Luteale fase'
+  };
+
+  headerEl.textContent = `${phaseLabels[selectedPhase]} · dag ${dag} · ${selectedDag}`;
+
+  tagRow.innerHTML = '';
+  getContextTags(selectedPhase, selectedDag).forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = t;
+    tagRow.appendChild(span);
+  });
+
+  const phaseContext = {
+    menstruatie: `De vrouw is in de menstruatiefase (dag ${dag}). Oestrogeen en progesteron zijn op hun laagst. Het lichaam verliest ijzer en is gevoeliger voor ontstekingen. Prioriteit: ontstekingsremmende voeding, ijzerherstel (orgaanvlees, wilde vis, donkere bladgroenten), lichte vertering, rust voor het zenuwstelsel. Vetten zijn nu essentieel als stabiele energiebron.`,
+    folliculair: `De vrouw is in de folliculaire fase (dag ${dag}). Oestrogeen stijgt langzaam. De lever werkt actief aan hormoonmetabolisme. Energie stijgt, de bloedsuiker reageert goed. Dit is de opbouwfase: eiwitten en gezonde vetten leggen de fundering. Complexe koolhydraten zoals zoete aardappel, quinoa en boekweit passen hier goed.`,
+    ovulatie: `De vrouw is in de ovulatiefase (dag ${dag}). Oestrogeen piekt. Energie en focus zijn op hun hoogst. Antioxidanten ondersteunen de eisprong en beschermen de cellen. Eiwitbehoefte is hoog. De bloedsuiker is stabiel — ideaal moment voor een volwaardig maaltijdpatroon met alle macronutriënten.`,
+    luteaal: `De vrouw is in de luteale fase (dag ${dag}). Progesteron domineert. De bloedsuiker is nu gevoeliger voor schommelingen — dit is de fase waarin trek in zoetigheid ontstaat. Magnesium raakt sneller uitgeput. Prioriteit: bloedsuiker stabiel houden via eiwitten + vetten + trage koolhydraten bij elke maaltijd, magnesiumrijke voeding (pompoenpitten, donkere chocolade, banaan), progesteron-ondersteunende voedingsstoffen (zink, B6, vitamine C).`
+  };
+
+  const dagContext = {
+    'deep work': `De dag vraagt diepe focus en mentale uithoudingsvermogen. De hersenen hebben stabiele glucose nodig — geen pieken en dalen. Prioriteit: langzame koolhydraten gecombineerd met eiwitten en vetten zodat concentratie uren aanhoudt. Een theelepel appelazijn in een groot glas water een halfuur voor de maaltijd is een effectieve hack voor stabiele bloedsuiker. Begin de maaltijd altijd met groenten, dan eiwitten, dan koolhydraten.`,
+    'veel afspraken': `Een dag vol sociale energie, presenteren en schakelen. Het zenuwstelsel staat op scherp, cortisol is actief. Prioriteit: licht verteerbaar, eiwitrijk, geen zware maaltijden tussen afspraken. Keltisch zeezout helpt bij hydratatie en elektrolytenbalans — essentieel bij een hoge sociale belasting. Geen snelle koolhydraten die leiden tot een energy dip midden in een gesprek.`,
+    'creatief werk': `Creativiteit vraagt een rustig, helder hoofd. Het brein functioneert het best op voldoende omega-3 (wilde vis, walnoten), stabiele bloedsuiker en lichte maaltijden die energie geven zonder zwaar te liggen. Avocado als vetbron ondersteunt langdurige mentale helderheid.`,
+    'herstel en rust': `Een lichte dag. Het lichaam mag repareren, de darmen mogen bijkomen. Prioriteit: anti-inflammatoire voeding, gefermenteerde producten (kefir) voor het microbioom, bottenbouillon als basis. Licht, voedzaam, eenvoudig. Geen overload van prikkels voor de darmen.`
+  };
+
+  const uitsluitingen = getUitsluitingen();
+  const uitsluitingsTekst = uitsluitingen.length > 0
+    ? `\n\nVOEDSELVOORKEUREN — HOUD HIER STRIKT REKENING MEE:\nDeze vrouw eet het volgende NIET: ${uitsluitingen.join(', ')}. Gebruik deze ingrediënten nergens in het advies, ook niet als bijgerecht of garnering.`
+    : '';
+
+  const prompt = `Je bent Cécile van Essen, orthomoleculair health coach en maker van de Eat for Leadership methode. Je schrijft in het Nederlands. Je toon is warm, helder en direct — geen coaching-speak, geen motivational energy. Je schrijft zoals je praat: persoonlijk, concreet, met rustige autoriteit.
+
+KERNPRINCIPES VAN JOUW METHODE:
+- Elke maaltijd bevat altijd alle drie de macronutriënten: koolhydraten + eiwitten + vetten
+- Koolhydraten combineer je altijd met vetten en eiwitten — bloedsuikerbalans is alles
+- Vetten = langdurige energie, geen crashes. Dit zeg jij altijd.
+- Minimaal 400g groenten per dag. Kleur op je bord = regulatie in je lichaam.
+- Appelazijn (1 tl in groot glas water) een halfuur voor de maaltijd = je favoriete bloedsuiker hack
+- Eet altijd in volgorde: groenten eerst (vezels beschermen), dan eiwitten, dan koolhydraten
+- Kwaliteit boven kwantiteit bij dierlijke producten (grasgevoerd, wild gevangen, rauw)
+- Food as medicine — zonder dat het zwaar voelt
+
+JOUW INGREDIËNTEN (gebruik uitsluitend deze):
+Vetten: grasroomboter, ghee, kokosolie (ongeraffineerd), olijfolie extra vierge, avocado
+Eiwitten: eieren, grasgevoerd vlees, wilde vis, ansjovis, tonijn, orgaanvlees (lever, kippenlevertjes), kefir van rauwe melk, yoghurt van rauwe melk, kikkererwten, linzen
+Complexe koolhydraten: zoete aardappel, quinoa, boekweit, gierst, teff, havermout (glutenvrij), groenten als primaire koolhydraatbron
+Groenten: seizoensgroenten in alle kleuren (courgette, bloemkool, spruitjes, wortel, biet, pompoen, aubergine, paprika, knolselderij, venkel)
+Fruit: seizoensfruit, banaan, bessen, peer, appel, sinaasappel
+Noten & zaden: walnoten, paranoten, zonnebloempitten, pompoenpitten, sesamzaad, chiazaad
+Kruiden: kurkuma, gember, kaneel (Ceylon), tijm, rozemarijn, peterselie, bieslook, munt, currykruiden, ras el hanout, paprikapoeder, keltisch zeezout, zwarte peper
+Functionele toevoegingen: appelazijn, kefir, bottenbouillon, rauwe honing (bewust, geen verbod)
+Meelbases: amandelmeel, kokosmeel, kikkererwtenmeel, amandelmelk
+
+STRIKTE REGELS VOOR LOGISCHE MAALTIJDCOMBINATIES:
+Elke maaltijd bevat altijd een dierlijk eiwit — dit is niet optioneel:
+- Ontbijt: eieren, kefir van rauwe melk, of yoghurt van rauwe melk. Nooit vlees, vis, orgaanvlees of ansjovis bij het ontbijt.
+- Lunch: eieren, wilde vis, ansjovis, tonijn, makreel, kefir, of orgaanvlees. Altijd hartig en met groenten.
+- Avondeten: grasgevoerd vlees, wilde vis, orgaanvlees (lever, kippenlevertjes), of eieren. Kikkererwten en linzen mogen erbij als aanvulling, maar nooit als enige eiwitbron.
+VERBODEN combinaties — maak deze NOOIT:
+- Orgaanvlees (lever, kippenlevertjes) NOOIT combineren met fruit, zoete ingrediënten, havermout of ontbijtproducten
+- Vis of vlees NOOIT bij ontbijt
+- Ansjovis NOOIT in zoete context
+- Peulvruchten NOOIT combineren: gebruik óf kikkererwten óf linzen in een maaltijd, nooit beide tegelijk. De naam van het gerecht en de ingrediënten moeten altijd overeenkomen — noem je linzen, gebruik dan linzen; noem je kikkererwten, gebruik dan kikkererwten.
+- Havermout of teff NOOIT combineren met vlees of vis
+
+VARIATIE — PUT UIT DEZE LIJST EN WISSEL BEWUST AF:
+Ontbijtopties: gevulde omelet met seizoensgroenten en ansjovis | smoothiebowl met rode biet, banaan en avocado | creamy smoothiebowl met peer en amandelmelk | chiapudding met bessen en pompoenpitten | teff pap met kaneel, walnoten en fruit | havermout met kokosolie, banaan en paranoten | bananenpannenkoekjes met amandelmeel en kokosolie | kefir hangop met rode biet en zonnebloempitten | yoghurt van rauwe melk met bessen en chiazaad | scrambled eggs met avocado en kurkuma
+
+Lunchopties: salade met gerookte makreel en olijfoliedressing | salade met ansjovis, geroosterde pompoen en kiemgroenten | zoete aardappel-wortelsoep met gember | pastinaaksoep met pesto en courgette | spicy pompoensoep met kurkuma | warme linzensalade met geroosterde groenten | kikkererwten met wortel, ansjovis en peterselie | egg wrap met avocado en seizoensgroenten | belegde aubergine met ei of vis | kippenlevertjes op geroosterde groenten | vissalade met tonijn en ei | geroosterde knolselderij met gekookt ei
+
+Avondopties: viscurry met wilde vis en gember | sardines uit de oven met geroosterde groenten | makreel uit de oven met citroen | runderlever met zoete aardappel en rozemarijn | kippenlevertjes op Italiaanse wijze met tomaat | aubergine gevuld met grasgevoerd gehakt en tomatensaus | geroosterde bloemkool met romescosaus, quinoa en ei | crispy spruitjes met tahini en ei | geroosterde kool met ghee en wilde vis | linzencurry met spinazie, kurkuma en ei | groene haring uit de oven met biet | kikkererwten met ansjovis, geroosterde groenten en olijfolie
+
+BELANGRIJK: kies elke keer bewust andere gerechten. Niet altijd dezelfde combinatie. Laat je leiden door de cyclusfase én het dagtype.
+
+CONTEXT CYCLUSFASE:
+${phaseContext[selectedPhase]}
+
+CONTEXT DAGTYPE:
+${dagContext[selectedDag]}${uitsluitingsTekst}
+
+OPDRACHT:
+Geef een concreet maaltijdadvies voor ontbijt, lunch en avondeten dat past bij deze combinatie van cyclusfase en dagtype.
+
+Gebruik EXACT dit format — geen inleiding, geen afsluiting, geen extra tekst.
+CONTROLEER bij elke maaltijd vóór je schrijft: zit er een dierlijk eiwit in? Zo niet, pas het aan.
+
+Ontbijt: [naam van het gerecht]
+[1 concrete zin met de ingrediënten — inclusief het dierlijke eiwit: ei, kefir of yoghurt]
+Waarom: [1-2 zinnen vanuit jouw methode — hormonaal principe of energetisch principe, toegankelijk maar niet oppervlakkig]
+
+Lunch: [naam van het gerecht]
+[1 concrete zin met de ingrediënten — inclusief het dierlijke eiwit: ei, vis, ansjovis, tonijn, makreel, kefir of orgaanvlees]
+Waarom: [1-2 zinnen]
+
+Avondeten: [naam van het gerecht]
+[1 concrete zin met de ingrediënten — inclusief het dierlijke eiwit: grasgevoerd vlees, wilde vis, orgaanvlees of ei]
+Waarom: [1-2 zinnen]
+
+Tip: [1 praktische tip specifiek voor deze combinatie. Over appelazijn, volgorde van eten, beweging na de maaltijd, keltisch zeezout, of een ander element uit jouw methode. Max 2 zinnen.]`;
+
+  try {
+    streamEl.textContent = 'Even geduld…';
+    const response = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    streamEl.textContent = data.content?.[0]?.text || 'Er ging iets mis. Probeer het opnieuw.';
+  } catch (e) {
+    streamEl.textContent = 'Er ging iets mis. Probeer het opnieuw.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Geef mij mijn maaltijdadvies →';
+  document.getElementById('recept-btns').style.display = 'block';
+  document.getElementById('recept-result').style.display = 'none';
+}
+
+async function getRecept(maaltijd) {
+  const advies = document.getElementById('streamed').textContent;
+  const receptStreamed = document.getElementById('recept-streamed');
+  const receptHeader = document.getElementById('recept-header');
+  const receptResult = document.getElementById('recept-result');
+
+  const labels = { ontbijt: 'Ontbijt', lunch: 'Lunch', avondeten: 'Avondeten' };
+  receptHeader.textContent = `Recept — ${labels[maaltijd]}`;
+  receptResult.style.display = 'block';
+  receptStreamed.textContent = '';
+
+  document.querySelectorAll('.recept-btn').forEach(b => b.disabled = true);
+
+  const prompt = `Je bent Cécile van Essen, orthomoleculair health coach. Schrijf in het Nederlands, warm en concreet.
+
+Hieronder staat een maaltijdadvies. Geef het volledige recept voor het ${maaltijd}.
+
+MAALTIJDADVIES:
+${advies}
+
+Schrijf het recept in dit format:
+
+Ingrediënten (voor 1 persoon):
+- [ingrediënt met hoeveelheid]
+- [ingrediënt met hoeveelheid]
+
+Bereiding:
+1. [stap]
+2. [stap]
+
+Tip van Cécile: [1 korte praktische tip over dit gerecht — over bereiding, variatie of een van haar methodeprincipes zoals volgorde van eten, appelazijn, of een functionele toevoeging]
+
+Geen inleiding, geen afsluiting. Direct beginnen met Ingrediënten.`;
+
+  try {
+    const response = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    receptStreamed.textContent = data.content?.[0]?.text || 'Er ging iets mis. Probeer het opnieuw.';
+  } catch (e) {
+    receptStreamed.textContent = 'Er ging iets mis. Probeer het opnieuw.';
+  }
+
+  document.querySelectorAll('.recept-btn').forEach(b => b.disabled = false);
+}
+
+function getContextTags(phase, dag) {
+  const phaseTags = {
+    menstruatie: ['IJzerherstel', 'Anti-inflammatoir', 'Vetten als brandstof'],
+    folliculair: ['Leverondersteuning', 'Oestrogeen opbouw', 'Energie stijgend'],
+    ovulatie: ['Antioxidanten', 'Eiwitrijk', 'Piekenergie'],
+    luteaal: ['Bloedsuiker stabiel', 'Magnesiumrijk', 'Progesteron support']
+  };
+  const dagTags = {
+    'deep work': ['Langdurige focus', 'Geen pieken', 'Appelazijn hack'],
+    'veel afspraken': ['Zenuwstelsel support', 'Licht verteerbaar', 'Elektrolyten'],
+    'creatief werk': ['Helder hoofd', 'Omega-3', 'Stabiele energie'],
+    'herstel en rust': ['Microbioom', 'Anti-inflammatoir', 'Darmherstel']
+  };
+  return [...(phaseTags[phase] || []), ...(dagTags[dag] || [])];
+}
+</script>
+</body>
+</html>
